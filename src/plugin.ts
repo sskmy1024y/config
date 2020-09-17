@@ -77,6 +77,20 @@ export interface IPlugin {
 
 const _pjson = require('../package.json')
 
+const getCommandsDir = (dirmap?: string | { [dirname: string]: string }) => {
+  if (typeof dirmap === "string" || !dirmap) return dirmap;
+
+  const cwd = path.basename(process.cwd());
+  const commandsDir = dirmap[cwd] || dirmap["default"] || ''
+  
+  if (commandsDir === '') {
+    console.error('Current directory is NOT available');
+    process.exit(1);
+  }
+
+  return commandsDir;
+};
+
 const hasManifest = function (p: string): boolean {
   try {
     require(p)
@@ -193,7 +207,6 @@ export class Plugin implements IPlugin {
     } else {
       this.pjson.oclif = this.pjson['cli-engine'] || {}
     }
-
     this.hooks = mapValues(this.pjson.oclif.hooks || {}, i => Array.isArray(i) ? i : [i])
 
     this.manifest = await this._manifest(Boolean(this.options.ignoreManifest), Boolean(this.options.errorOnManifestCreate))
@@ -211,7 +224,7 @@ export class Plugin implements IPlugin {
   }
 
   get commandsDir() {
-    return tsPath(this.root, this.pjson.oclif.commands)
+    return tsPath(this.root, getCommandsDir(this.pjson.oclif.commands))
   }
 
   get commandIDs() {
